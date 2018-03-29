@@ -1,0 +1,513 @@
+---
+title: "Job Report for NGO Recruitment" 
+subtitle: "GFD Analytics Section"
+output:
+  html_document: 
+    code_download: true
+    code_folding: hide
+    number_sections: yes
+    theme: "default"
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup,include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+## Giới thiệu
+
+[VUFO-NGO Resource Centre]( http://www.ngocentre.org.vn/jobs) là một nguồn thông tin rất quen thuộc đối với các tổ chức và cá nhân làm việc trong lĩnh vực tư vấn cho các dự án phát triển.
+
+Khi phân tích thông tin tuyển dụng trong 8 năm qua ở trang Web này, chúng tôi thấy một số xu hướng như sau:
+- Trừ Hà Nội và Sài Gòn, 5 tỉnh tuyển dụng nhiều việc nhất là: Thanh Hóa, Điện Biện, Đà Nẵng, Cao Bằng, Yên Bái.
+- Tháng tuyển dụng nhiều nhất là tháng 8; tháng tuyển dụng ít nhất là tháng 1 và tháng 2;
+- Các vị trí được tuyển dụng nhiều nhất là: tư vấn, project officer, trợ lý dự án, quản lý dự án, điều phối viên, đánh giá dự án, đào tạo, tài chính.
+
+
+Trừ một số tổ chức lớn có 
+cổng đấu thầu riêng như ADB, WB thì hầu hết các nhà tài trợ tại Việt Nam đều đăng tải tuyển dụng trên trang Web này. Công việc đăng tại NGO Center khá đa dạng
+gồm cả nhân viên dài hạn cho dự án hoặc nhà tài trợ, tư vấn cá nhân và các gói thầu cỡ vừa và nhỏ.
+
+Tại [GFD]( http://gfd.com.vn/en/index.html) chúng tôi cũng thường xuyên sử dụng trang VUFO-NGO để tìm kiếm các công việc mới. Để có một cái nhìn tốt hơn về số lượng công việc theo nhà tài trợ, theo ngành nghề chúng tôi làm một "nghiên cứu bỏ túi" về chủ đề này. Nghiên cứu này thực hiện bởi  bộ phận phân tích dữ liệu của GFD (GFD Analytics Section ). Công cụ sử dụng là phần mềm R, gồm một số bước chính như sau:
+
+- Sử dụng RCurl phân tích cấu trúc html của VUFO-NGO Resource Centre 
+- Lần lượt quét và tải dữ liệu jobs từ 2009-2018 
+- Làm sạch và lưu thành các thuộc tính quan trọng (jobs name, donors, date, location) - Thực hiện một số tính toán đơn giản như số đếm job theo năm, số job theo nhà tài trợ, đếm từ khóa để thống kê ngành nghề 
+- Vẽ đồ thị dùng  ggplot2, và một số công cụ xử lý khác trong gói tidyverse,
+ 
+
+Một vài con số ban đầu như sau:
+
+- Công việc sớm nhất mà hệ thống còn lưu lại được đăng tải vào ngày 14/08/2009, do tổ chức VSO tuyển dụng: Administrative and Financial Support Officer . 
+- Tổng số công việc là 13,720, trung bình mỗi ngày có 4.4 việc được đăng lên hệ thống.
+- Tổng số tổ chức đã đăng tuyển dụng là 1629. Tuy nhiên có rất nhiều tổ chức chỉ đăng tuyển 1 lần, hoặc tên nhà tuyển dụng là tên dự án, do đó không thống kê được vào một tổ chức cụ thể. Nếu chỉ tính những tổ chức có đăng tuyển dụng 5 lần trở lên thì số lượng chỉ còn 370; đăng trên 10 tuyển dụng là 240 tổ chức; trên 20 tuyển dụng là 100 tổ chức.
+
+
+```{r}
+rm(list = ls())
+library(tidyverse)
+library(magrittr)
+library(lubridate)
+library(stringr)
+library(highcharter)
+job <- read.csv("C:/Users/Viet Anh/Documents/ngo_jobs/NGO-Jobs-v4.csv")
+
+thoi_gian <- function(x) {
+  x %>% 
+    str_sub(start = 6, end = 16) %>% 
+    ymd() %>% 
+    return()
+}
+
+
+job %<>% mutate(time = thoi_gian(deadline), 
+                nam = year(time), 
+                org_name = as.character(org_name))
+
+# Có một số tổ chức sử dụng hai tên khác nhau do đó cần rename
+# lại tên cho chúng (đoạn codes bổ sung ngày 11 / 03): 
+
+# rename_org <- function(x) {
+#   ELSE <- TRUE
+#   case_when(x == "GIZ BiO Forestry Project" ~ "GIZ", 
+#             str_detect(x, "SNV") ~ "SNV - Netherlands Development Organisation", 
+#             ELSE ~ x)
+# }
+# 
+# 
+# job %<>% mutate(org_name = rename_org(org_name))
+job %<>% filter(nam %in% c(2009:2017))
+
+# Top 30 tổ chức có nhiều việc nhất: 
+
+# top30 <- job %>% 
+#   group_by(org_name) %>% 
+#   count() %>%
+#   ungroup() %>% 
+#   arrange(-n) %>% 
+#   mutate_if(is.factor, character) %>% 
+#   slice(1:30) 
+
+
+top30 <- job %>%
+  group_by(org_name) %>%
+  count() %>%
+  ungroup() %>%
+  arrange(-n) %>%
+  mutate_if(is.factor, character) %>%
+  slice(1:30)
+
+
+```
+
+
+
+
+```{r}
+job %>% 
+  group_by(nam) %>% 
+  count() %>% 
+  ungroup()-> job_by_year
+
+
+# highchart() %>% 
+#   hc_xAxis(categories = job_by_year$nam) %>% 
+#   hc_add_series(data = job_by_year$n, 
+#                 showInLegend = FALSE, 
+#                 type = "column", 
+#                 color = "#104E8B") %>% 
+#   hc_title(text = "The Number of Jobs from 2009 to 2017") %>% 
+#   hc_credits(enabled = TRUE,
+#              text = "Data Source: http://www.ngocentre.org.vn",  
+#              style = list(fontSize = "12px")) %>% 
+#   hc_tooltip(valueDecimals = 0, 
+#              pointFormat = "Number: {point.y}") %>% 
+#   hc_add_theme(hc_theme_538())
+```
+
+## Phân bổ việc làm theo nhà tuyển dụng
+
+5 nhà tuyển dụng có số lượng công việc nhiều nhất là: World Vision , SNV , Save the Children , Oxfam và CARE. Tổng số công việc của 5 tổ chức này là 3071 việc chiếm 22% tổng số đăng tuyển.
+
+
+Đồ thị dưới đây trình bầy số lượng tuyển dụng của 30 NGOs có lượng tuyển dụng lớn. Tổng số công việc của 30 tổ chức này là 5473 - chiếm 40% tất cả các công việc được đăng tải.Đây là một sự tập trung rất lớn so với tổng số hơn 1600 tổ chức có thông báo đăng tuyển việc làm. Tuy nhiên như đã nói ở trên, có rất nhiều công việc được đăng lên dưới tên dự án, đối với những trường hợp này chúng ta sẽ không có thông tin chính xác về nhà tài trợ.
+
+Sau top 5 nhà tuyển dụng thì WWF, ActionAid, UNDP, ENV, PlanInternational cũng là những tổ chức có lượng tuyển dụng lớn. JICA, mặc dù là một nhà tài trợ rất lớn nhưng hầu như không có đăng tuyển ở đây, giống như ADB và WB, JICA có hệ thống tuyển dụng riêng.
+
+
+
+```{r}
+# highchart() %>%
+#   hc_xAxis(categories = top30$org_name) %>%
+#   hc_add_series(data = top30$n,
+#                 showInLegend = FALSE,
+#                 type = "column",
+#                 color = "#104E8B") %>%
+#   hc_title(text = "Top 30 NGOs with The largest Number of Jobs from 2009 to 2017") %>%
+#   hc_credits(enabled = TRUE,
+#              text = "Data Source: http://www.ngocentre.org.vn",
+#              style = list(fontSize = "12px")) %>%
+#   hc_tooltip(valueDecimals = 0,
+#              pointFormat = "Number: {point.y}") %>%
+#   hc_add_theme(hc_theme_538())
+
+u <- job %>% 
+  group_by(org_name) %>% 
+  count() %>%
+  ungroup() %>% 
+  arrange(-n)
+
+
+# u$org_name %>% unique() %>% length()
+#u$n[1:20] %>% sum() / u$n %>% sum()
+
+
+
+highchart() %>%
+  hc_xAxis(categories = top30$org_name[1:20]) %>% 
+  hc_add_series(name = "Number of Jobs", 
+                data = top30$n[1:20], 
+                color = "#104E8B", 
+                showInLegend = FALSE) %>% 
+  hc_chart(type = "bar", options2d = list(enabled = TRUE, beta = 1, alpha = 1)) %>% 
+  hc_title(text = "Top 20 NGOs with The largest Number of Jobs from 2009 to 2017") %>% 
+  hc_credits(enabled = TRUE,
+             text = "Data Source: http://www.ngocentre.org.vn",  
+             style = list(fontSize = "12px")) %>% 
+  hc_add_theme(hc_theme_538())
+
+```
+
+
+## Phân bổ việc làm theo năm
+
+Ngoại trừ năm 2009 chỉ có số liệu từ tháng 8, từ 2010 số lượng công việc có xu hướng tăng nhẹ cho tới năm 2015, tuy nhiên mức tăng không nhiều. Từ 2015 đến 2017 số lượng công việc có xu hướng giảm nhẹ.
+
+
+
+```{r}
+# Top 5 tổ chức có nhiều việc nhất: 
+top30$org_name[1:5] -> top5_org
+
+job %<>% mutate(org_name2 = case_when(org_name %in% top5_org ~ org_name, 
+                                      !org_name %in% top5_org ~ "Others"))
+
+
+org_rename <- function(x) {
+  case_when(x == top5_org[1] ~ "SNV", 
+            x == top5_org[2] ~ "World Vision", 
+            x == top5_org[5] ~ "CARE", 
+            !x %in% top5_org[c(1, 2, 5)] ~ x)
+}
+
+
+
+job %>% 
+  group_by(org_name2, nam) %>% 
+  count() %>% 
+  ungroup() -> top_5_cong1
+
+top_5_cong1$org_name2 <- org_rename(top_5_cong1$org_name2)
+
+# top_5_cong1 %>% 
+#   ggplot(aes(nam, n, fill = org_name2)) + 
+#   geom_col(position = "stack")
+
+
+top_5_cong1 %>% 
+  hchart(hcaes(nam, n, group = org_name2), type = "column", showInLegend = TRUE) %>% 
+  hc_plotOptions(series = list(stacking = "normal")) %>% 
+  hc_add_theme(hc_theme_sandsignika()) %>% 
+  hc_yAxis(title = list(text = "")) %>% 
+  hc_xAxis(title = list(text = "")) %>% 
+  hc_title(text = "The Number of Jobs from 2009 to 2017") %>% 
+  hc_credits(enabled = TRUE,
+             text = "Data Source: http://www.ngocentre.org.vn",  
+             style = list(fontSize = "12px"))
+```
+
+
+
+
+## Phân bố về việc làm được tuyển dụng theo tháng của các NGOs
+
+Số lượng công việc được tuyển dụng thường sẽ không cao vào tháng 1 và 2 dương lịch. Đây cũng là thời điểm giáp tết Nguyên Đán. Số lượng công việc được tuyển thường đạt đỉnh cao vào tháng 8 sau đó giảm dần cho đến cuối năm và hai tháng của năm mới kế tiếp: 
+
+```{r}
+job %<>% mutate(thang = month(time, label = TRUE, abbr = TRUE))
+
+job_thang_nam <- job %>% 
+  group_by(nam, thang) %>% 
+  count() %>% 
+  ungroup() %>% 
+  arrange(thang)
+
+# job_thang_nam %>% 
+#   ggplot(aes(thang, n)) + 
+#   geom_col() + 
+#   facet_wrap(~ nam, scales = "free")
+
+
+# Việc theo thời gian là tháng - năm: 
+# highchart() %>% 
+#   hc_add_series(name = "Year of 2010", 
+#                 showInLegend = FALSE, 
+#                 data = job_thang_nam %>% filter(nam == 2010) %>% pull(n)) %>% 
+#   hc_add_series(name = "Year of 2011", 
+#                 showInLegend = FALSE, 
+#                 data = job_thang_nam %>% filter(nam == 2011) %>% pull(n)) %>% 
+#   hc_add_series(name = "Year of 2012", 
+#                 showInLegend = FALSE, 
+#                 data = job_thang_nam %>% filter(nam == 2012) %>% pull(n)) %>% 
+#   hc_add_series(name = "Year of 2013", 
+#                 showInLegend = FALSE, 
+#                 data = job_thang_nam %>% filter(nam == 2013) %>% pull(n)) %>% 
+#   hc_add_series(name = "Year of 2014", 
+#                 showInLegend = FALSE, 
+#                 data = job_thang_nam %>% filter(nam == 2014) %>% pull(n)) %>% 
+#   hc_add_series(name = "Year of 2015", 
+#                 showInLegend = FALSE, 
+#                 data = job_thang_nam %>% filter(nam == 2015) %>% pull(n)) %>% 
+#   hc_add_series(name = "Year of 2016", 
+#                 showInLegend = FALSE, 
+#                 data = job_thang_nam %>% filter(nam == 2016) %>% pull(n)) %>% 
+#   hc_add_series(name = "Year of 2017", 
+#                 showInLegend = FALSE, 
+#                 data = job_thang_nam %>% filter(nam == 2017) %>% pull(n)) %>% 
+#   hc_xAxis(categories = job_thang_nam$thang %>% unique()) %>% 
+#   hc_add_theme(hc_theme_538()) %>% 
+#   hc_yAxis(title = list(text = "Number of Recruited Jobs")) %>% 
+#   hc_title(text = "The Number of Jobs from 2010 to 2017 by Month and Year") %>%
+#   hc_subtitle(text = "Data Source: http://www.ngocentre.org.vn")
+```
+
+ 
+
+```{r}
+job %>% 
+  group_by(thang) %>% 
+  count() -> viec_thang
+
+
+highchart() %>% 
+  hc_add_series(data = round(viec_thang %>% pull(n) / 9, 0), showInLegend = FALSE) %>% 
+  hc_add_theme(hc_theme_538()) %>% 
+  hc_yAxis(title = list(text = " ")) %>% 
+  hc_xAxis(categories = viec_thang$thang %>% unique()) %>% 
+  hc_title(text = "Average Jobs by Month") %>%
+  hc_subtitle(text = "Data Source: http://www.ngocentre.org.vn")
+```
+
+
+```{r}
+# Danh sách 10 NGOs có nhiều việc nhất: 
+
+top10_ngo <- top30$org_name[1:10]
+
+# job %>% 
+#   filter(org_name %in% top10_ngo) %>% 
+#   group_by(org_name, thang) %>% 
+#   count() %>% 
+#   ungroup() %>% 
+#   ggplot(aes(thang, n)) + 
+#   geom_col() +
+#   facet_wrap(~ org_name, scales = "free")
+
+job %>% 
+  filter(org_name %in% top10_ngo) %>% 
+  group_by(org_name, thang) %>% 
+  count() %>% 
+  ungroup() -> top10_by_month
+
+ten_top10 <- top10_by_month$org_name %>% unique()
+
+
+# highchart() %>%
+#   hc_add_series(data = top10_by_month %>% filter(org_name == ten_top10[1]) %>% pull(n),
+#                 showInLegend = FALSE, name = ten_top10[1]) %>%
+#   hc_add_series(data = top10_by_month %>% filter(org_name == ten_top10[2]) %>% pull(n),
+#                 showInLegend = FALSE, name = ten_top10[2]) %>%
+#   hc_add_series(data = top10_by_month %>% filter(org_name == ten_top10[3]) %>% pull(n),
+#               showInLegend = FALSE, name = ten_top10[3]) %>%
+#   hc_add_series(data = top10_by_month %>% filter(org_name == ten_top10[4]) %>% pull(n),
+#                 showInLegend = FALSE, name = ten_top10[4]) %>%
+#   hc_add_series(data = top10_by_month %>% filter(org_name == ten_top10[5]) %>% pull(n),
+#                 showInLegend = FALSE, name = ten_top10[5]) %>%
+#   hc_add_series(data = top10_by_month %>% filter(org_name == ten_top10[6]) %>% pull(n),
+#                 showInLegend = FALSE, name = ten_top10[6]) %>%
+#   hc_add_series(data = top10_by_month %>% filter(org_name == ten_top10[7]) %>% pull(n),
+#                 showInLegend = FALSE, name = ten_top10[7]) %>%
+#   hc_add_series(data = top10_by_month %>% filter(org_name == ten_top10[8]) %>% pull(n),
+#                 showInLegend = FALSE, name = ten_top10[8]) %>%
+#   hc_add_series(data = top10_by_month %>% filter(org_name == ten_top10[9]) %>% pull(n),
+#                 showInLegend = FALSE, name = ten_top10[9]) %>%
+#   hc_add_series(data = top10_by_month %>% filter(org_name == ten_top10[10]) %>% pull(n),
+#                 showInLegend = FALSE, name = ten_top10[10]) %>%
+#   hc_xAxis(categories = top10_by_month$thang %>% unique()) %>%
+#   hc_yAxis(title = list(text = "Number of Recruited Jobs")) %>%
+#   hc_title(text = "The Number of Jobs from 2010 to 2017 by Month for top 10 NGOs") %>%
+#   hc_subtitle(text = "Data Source: http://www.ngocentre.org.vn") %>%
+#   hc_add_theme(hc_theme_538())
+```
+
+
+
+```{r}
+# Đoạn mới về word cloud: 
+
+
+# library(wordcloud)
+
+rename_job_title <- function(x) {
+  x <- str_to_lower(x)
+  x %>% 
+    str_replace_all("programme", "program") %>% 
+    str_replace_all("consultancy|consultants", "consultant") %>% 
+    str_replace_all("project|international|national|program", "")
+  
+}
+
+
+# set.seed(291989)
+# wordcloud(job$job_name %>% rename_job_title(), 
+#           max.words = 100, 
+#           random.order = FALSE, 
+#           rot.per = 0.35, 
+#           font = 4,
+#           colors = brewer.pal(8, "Dark2"))
+```
+
+
+## Nhóm công việc được tuyển dụng phổ biến nhất
+
+Để thống kê nhóm công việc chúng tôi sử dụng công cụ đếm từ của gói TM. Gói này cho phép làm sạch, bỏ bớt các từ nối và hợp nhất các từ có cùng gốc (ví dụ số ít, số nhiều, các thời khác nhau của động từ). Đây chưa hẳn là cách phù hợp nhất để phân loại công việc theo ngành nghề, chúng tôi chỉ đơn giản đưa ra danh sách một số từ khóa được nhắc đến nhiều nhất trong tiêu đề công việc.
+
+Nhóm các công việc liên quan đến tư vấn (Consultant), Quản lí (Manager), Hỗ trợ (Assistant), Officer và phát triển (Development) là nhóm 5 công việc chiếm tỉ trọng lớn nhất (hơn 26%). Bạn có thể click vào Word Cloud ở dưới để xem số lượng từ được thống kê.
+
+
+```{r}
+library(tm)
+
+
+Corpus(VectorSource(job$job_name %>% rename_job_title())) %>% 
+  tm_map(removeWords, c("for", "and", "the", "vietnam", "conduct")) %>% 
+  TermDocumentMatrix() -> dtm
+
+
+m <- as.matrix(dtm)
+v <- sort(rowSums(m), decreasing = TRUE)
+d <- data.frame(word = names(v), freq = v)
+
+
+library(wordcloud2)
+
+
+top_job <- d %>% filter(freq >= 50, word != d$word[7])
+# top_job$freq[1:5] %>% sum / top_job$freq %>% sum()
+
+set.seed(1)
+wordcloud2(d %>% filter(freq >= 50, word != d$word[7]), 
+           color = "random-light", 
+           backgroundColor = "black")
+
+
+```
+
+
+```{r}
+top_job %>% 
+  slice(1:20) %>% 
+  mutate(word = str_to_upper(word)) %>% 
+  ggplot(aes(reorder(word, freq), freq)) + 
+  geom_col() + 
+  coord_flip() + 
+  geom_text(aes(label = freq), hjust = 1.1, color = "white", size = 3) + 
+  theme_minimal() + 
+  labs(x = NULL, y = NULL, 
+       title = "20 Most Popular Jobs", 
+       caption = "Data Source: http://www.ngocentre.org.vn")
+
+```
+
+
+
+```{r}
+# d %>% 
+#   slice(1:20) %>% 
+#   mutate(word = str_to_upper(word)) %>% 
+#   ggplot(aes(reorder(word, freq), freq)) + 
+#   geom_col() + 
+#   geom_text(aes(label = freq), hjust = 1.1, color = "white", size = 4) + 
+#   coord_flip() + 
+#   theme_minimal() + 
+#   theme(axis.title.x = element_blank(),
+#         axis.text.x = element_blank(),
+#         axis.ticks.x = element_blank()) + 
+#   labs(x = NULL, y = NULL, 
+#        title = "The Most Recruited Jobs by NGOs", 
+#        caption = "Data Source: http://www.ngocentre.org.vn")
+
+```
+
+## Địa điểm của công việc được tuyển dụng
+
+Hà Nội và Thành Phố Hồ Chí Minh chiếm 67.4% tổng số công việc được tuyển dụng của các NGOs với số công việc được tuyển dụng lần lượt là 6123 và 979. Có thể thấy không chỉ có sự mất cân bằng về số lượng công việc được tuyển của hai thành phố lớn này so với phần còn lại và còn có sự bất đối xứng lớn giữa hai địa điểm có nhiều công việc được đăng tuyển nhất khi tỉ lệ chênh lệch là hơn 6 lần. Kết quả này cũng là dễ hiểu vì hầu hết các nhà tài trợ đều có trụ sở ở Hà Nội, sau đó mới đến Sài Gòn. Tuy vậy cũng có thể thấy vẫn có hơn 30% công việc được tuyển dụng cho các vị trí ở tỉnh. Ngoài ra số lượng việc đăng trên trang VUFO cũng không phản ảnh hết số việc được tuyển ở địa phương, thông thường các công việc này sẽ được tuyển dụng trực tiếp tại tỉnh thông qua các kênh tuyển dụng địa phương.
+
+```{r}
+job$loc_name -> location
+u <- location %>% 
+  str_split(pattern = ",", simplify = TRUE) %>% 
+  as.vector()
+
+u[u == "Na"] <- NA
+
+
+u %>% 
+  str_trim() %>% 
+  table() %>% 
+  as.data.frame() -> u
+
+names(u) <- c("word", "freq")
+
+u %>%  
+  arrange(-freq) %>% 
+  slice(-1) %>% 
+  filter(freq >= 10) -> p
+
+# p$freq[c(1, 2)] %>% sum() / p$freq %>% sum()
+
+
+# Hầu hết các job đều ở Hà Nội và Sài Gòn: 
+# wordcloud2(p, 
+#            color = "random-light", 
+#            backgroundColor = "black")
+
+
+p %>% 
+  slice(-c(1, 2)) %>% 
+  slice(1:25) %>% 
+  mutate(word = str_to_upper(word) %>% as.factor()) %>% 
+  ggplot(aes(reorder(word, freq), freq)) + 
+  geom_col() + 
+  geom_text(aes(label = freq), hjust = 1.1, color = "white") + 
+  coord_flip() + 
+  theme_minimal() + 
+  labs(x = NULL, y = NULL, 
+       title = "Top 25 Locations for NGO Jobs", 
+       caption = "Data Source: http://www.ngocentre.org.vn")
+
+```
+
+
+
+
+```{r}
+# Nếu không tính đến hai thành phố này thì: 
+# wordcloud2(p %>% slice(-c(1, 2)), 
+#            color = "random-light", 
+#            backgroundColor = "black", 
+#            size = 0.4)
+```
+
