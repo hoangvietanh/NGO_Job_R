@@ -1,5 +1,5 @@
 ---
-title: "Job Report for NGO Recruitment" 
+title: "Phân tích thông tin tuyển dụng trên trang VUFO-NGO" 
 subtitle: "GFD Analytics Section"
 output:
   html_document: 
@@ -15,15 +15,18 @@ output:
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
+# Tóm tắt
+Khi phân tích hơn 13 nghìn thông tin tuyển dụng trong 8 năm qua tại trang VUFO  , chúng tôi thấy một số xu hướng như sau:
 
-## Giới thiệu
-
-[VUFO-NGO Resource Centre]( http://www.ngocentre.org.vn/jobs) là một nguồn thông tin rất quen thuộc đối với các tổ chức và cá nhân làm việc trong lĩnh vực tư vấn cho các dự án phát triển.
-
-Khi phân tích thông tin tuyển dụng trong 8 năm qua ở trang Web này, chúng tôi thấy một số xu hướng như sau:
 - Trừ Hà Nội và Sài Gòn, 5 tỉnh tuyển dụng nhiều việc nhất là: Thanh Hóa, Điện Biện, Đà Nẵng, Cao Bằng, Yên Bái.
 - Tháng tuyển dụng nhiều nhất là tháng 8; tháng tuyển dụng ít nhất là tháng 1 và tháng 2;
 - Các vị trí được tuyển dụng nhiều nhất là: tư vấn, project officer, trợ lý dự án, quản lý dự án, điều phối viên, đánh giá dự án, đào tạo, tài chính.
+- 5 nhà tuyển dụng lớn nhất là World Vision , SNV , Save the Children , Oxfam và CARE.
+
+
+# Giới thiệu
+
+[VUFO-NGO Resource Centre]( http://www.ngocentre.org.vn/jobs) là một nguồn thông tin rất quen thuộc đối với các tổ chức và cá nhân làm việc trong lĩnh vực tư vấn cho các dự án phát triển.
 
 
 Trừ một số tổ chức lớn có 
@@ -34,9 +37,10 @@ Tại [GFD]( http://gfd.com.vn/en/index.html) chúng tôi cũng thường xuyên
 
 - Sử dụng RCurl phân tích cấu trúc html của VUFO-NGO Resource Centre 
 - Lần lượt quét và tải dữ liệu jobs từ 2009-2018 
-- Làm sạch và lưu thành các thuộc tính quan trọng (jobs name, donors, date, location) - Thực hiện một số tính toán đơn giản như số đếm job theo năm, số job theo nhà tài trợ, đếm từ khóa để thống kê ngành nghề 
+- Làm sạch và lưu thành các thuộc tính quan trọng (jobs name, donors, date, location)
+- Dữ liệu đã làm sạch có thể tải từ địa chỉ https://github.com/hoangvietanh/NGO_Job_R/blob/master/NGO-Jobs-v4.csv
+- Thực hiện một số tính toán đơn giản như số đếm job theo năm, số job theo nhà tài trợ, đếm từ khóa để thống kê ngành nghề 
 - Vẽ đồ thị dùng  ggplot2, và một số công cụ xử lý khác trong gói tidyverse,
- 
 
 Một vài con số ban đầu như sau:
 
@@ -127,7 +131,7 @@ job %>%
 #   hc_add_theme(hc_theme_538())
 ```
 
-## Phân bổ việc làm theo nhà tuyển dụng
+# Phân bổ việc làm theo nhà tuyển dụng
 
 5 nhà tuyển dụng có số lượng công việc nhiều nhất là: World Vision , SNV , Save the Children , Oxfam và CARE. Tổng số công việc của 5 tổ chức này là 3071 việc chiếm 22% tổng số đăng tuyển.
 
@@ -181,7 +185,7 @@ highchart() %>%
 ```
 
 
-## Phân bổ việc làm theo năm
+# Phân bổ việc làm theo năm
 
 Ngoại trừ năm 2009 chỉ có số liệu từ tháng 8, từ 2010 số lượng công việc có xu hướng tăng nhẹ cho tới năm 2015, tuy nhiên mức tăng không nhiều. Từ 2015 đến 2017 số lượng công việc có xu hướng giảm nhẹ.
 
@@ -231,7 +235,7 @@ top_5_cong1 %>%
 
 
 
-## Phân bố về việc làm được tuyển dụng theo tháng của các NGOs
+# Phân bố về việc làm được tuyển dụng theo tháng của các NGOs
 
 Số lượng công việc được tuyển dụng thường sẽ không cao vào tháng 1 và 2 dương lịch. Đây cũng là thời điểm giáp tết Nguyên Đán. Số lượng công việc được tuyển thường đạt đỉnh cao vào tháng 8 sau đó giảm dần cho đến cuối năm và hai tháng của năm mới kế tiếp: 
 
@@ -380,7 +384,7 @@ rename_job_title <- function(x) {
 ```
 
 
-## Nhóm công việc được tuyển dụng phổ biến nhất
+# Nhóm công việc được tuyển dụng phổ biến nhất
 
 Để thống kê nhóm công việc chúng tôi sử dụng công cụ đếm từ của gói TM. Gói này cho phép làm sạch, bỏ bớt các từ nối và hợp nhất các từ có cùng gốc (ví dụ số ít, số nhiều, các thời khác nhau của động từ). Đây chưa hẳn là cách phù hợp nhất để phân loại công việc theo ngành nghề, chúng tôi chỉ đơn giản đưa ra danh sách một số từ khóa được nhắc đến nhiều nhất trong tiêu đề công việc.
 
@@ -451,7 +455,7 @@ top_job %>%
 
 ```
 
-## Địa điểm của công việc được tuyển dụng
+# Địa điểm của công việc được tuyển dụng
 
 Hà Nội và Thành Phố Hồ Chí Minh chiếm 67.4% tổng số công việc được tuyển dụng của các NGOs với số công việc được tuyển dụng lần lượt là 6123 và 979. Có thể thấy không chỉ có sự mất cân bằng về số lượng công việc được tuyển của hai thành phố lớn này so với phần còn lại và còn có sự bất đối xứng lớn giữa hai địa điểm có nhiều công việc được đăng tuyển nhất khi tỉ lệ chênh lệch là hơn 6 lần. Kết quả này cũng là dễ hiểu vì hầu hết các nhà tài trợ đều có trụ sở ở Hà Nội, sau đó mới đến Sài Gòn. Tuy vậy cũng có thể thấy vẫn có hơn 30% công việc được tuyển dụng cho các vị trí ở tỉnh. Ngoài ra số lượng việc đăng trên trang VUFO cũng không phản ảnh hết số việc được tuyển ở địa phương, thông thường các công việc này sẽ được tuyển dụng trực tiếp tại tỉnh thông qua các kênh tuyển dụng địa phương.
 
