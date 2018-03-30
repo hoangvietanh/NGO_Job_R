@@ -16,12 +16,12 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
 # Tóm tắt
-Khi phân tích hơn 13 nghìn thông tin tuyển dụng trong 8 năm qua tại trang VUFO  , chúng tôi thấy một số xu hướng như sau:
+Khi phân tích hơn 13 nghìn thông tin tuyển dụng trong 8 năm qua tại trang tuyển dụng VUFO NGO Jobs, chúng tôi thấy một số xu hướng như sau:
 
-- Trừ Hà Nội và Sài Gòn, 5 tỉnh tuyển dụng nhiều việc nhất là: Thanh Hóa, Điện Biện, Đà Nẵng, Cao Bằng, Yên Bái.
+- Trừ Hà Nội và Sài Gòn, 5 tỉnh tuyển dụng nhiều việc nhất là: Thanh Hóa, Điện Biện, Đà Nẵng, Cao Bằng, Yên Bái. Số lượng tuyển dụng cho các tỉnh miền Bắc và Miền Trung là lớn hớn miền Nam rất nhiều.
 - Tháng tuyển dụng nhiều nhất là tháng 8; tháng tuyển dụng ít nhất là tháng 1 và tháng 2;
 - Các vị trí được tuyển dụng nhiều nhất là: tư vấn, project officer, trợ lý dự án, quản lý dự án, điều phối viên, đánh giá dự án, đào tạo, tài chính.
-- 5 nhà tuyển dụng lớn nhất là World Vision , SNV , Save the Children , Oxfam và CARE.
+- 5 nhà tuyển dụng lớn nhất là World Vision , SNV , Save the Children , Oxfam và CARE. ADB, WB và JICA có cổng tuyển dụng riêng nên hầu như không xuất hiện trên VUFO.
 
 
 # Giới thiệu
@@ -485,7 +485,7 @@ location_greater_10 %>%
   # slice(1:60) %>% 
   mutate(word = str_to_upper(word) %>% as.factor()) %>% 
   filter(!word %in% c("VIET NAM", "VIETNAM","LAO","CAMBODIA","THAIL","VIENTIANE",
-                      "MYANMAR","INTERNATIONAL")) %>%
+                      "MYANMAR","INTERNATIONAL","THAILAND")) %>%
   slice(1:63) %>%
   ggplot(aes(reorder(word, freq), freq)) + 
   geom_col() + 
