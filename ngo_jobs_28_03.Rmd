@@ -56,7 +56,8 @@ library(magrittr)
 library(lubridate)
 library(stringr)
 library(highcharter)
-job <- read.csv("D:/GFD_GIT/NGO-Jobs-v4.csv")
+
+job <- read.csv("./NGO-Jobs-v4.csv")
 
 thoi_gian <- function(x) {
   x %>% 
