@@ -482,7 +482,7 @@ location_greater_10 %>%
   # filter(!word %in% c("Thailand", "Cambodia","Lao",)) %>%
   # slice(1:60) %>% 
   mutate(word = str_to_upper(word) %>% as.factor()) %>% 
-  filter(!word %in% c("VIETNAM","LAO","CAMBODIA","THAIL","VIENTIANE",
+  filter(!word %in% c("VIET NAM", "VIETNAM","LAO","CAMBODIA","THAIL","VIENTIANE",
                       "MYANMAR","INTERNATIONAL")) %>%
   slice(1:63) %>%
   ggplot(aes(reorder(word, freq), freq)) + 
