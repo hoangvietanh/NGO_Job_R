@@ -404,8 +404,10 @@ wordcloud2(top_job,
 
 
 ```{r}
+fu <- top_job$word %>% as.character()
+
 top_job %>% 
-  filter(!word %in% c("team", "with")) %>% 
+  filter(!word %in% c("team", "with", fu[c(25, 27)])) %>% 
   slice(1:30) %>% 
   mutate(word = str_to_upper(word)) %>% 
   ggplot(aes(reorder(word, freq), freq)) + 
